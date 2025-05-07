@@ -12,7 +12,14 @@
       <input v-model="category" placeholder="e.g., personal" />
   
       <label>Icon</label>
-      <input v-model="icon" placeholder="e.g., 📌" />
+      <select v-model="icon">
+        <option value="">None</option>
+        <option v-for="iconName in availableIcons" :key="iconName" :value="iconName">
+            {{ iconName }}
+        </option>
+      </select>
+
+
   
       <label>Due Date</label>
       <input v-model="duedate" type="date" />
@@ -20,20 +27,25 @@
       <button type="submit">Add Note</button>
     </form>
   </template>
-
-
-
+  
   <script setup>
   import { ref } from 'vue'
-
-  const emit = defineEmits(['note-added'])
   
+  // Emits event to notify parent when note is added
+  const emit = defineEmits(['note-added'])
+
+  import { Pencil, Book, ShoppingCart, Pin, Rocket } from 'lucide-vue-next'
+  const availableIcons = ['Pencil', 'Book', 'ShoppingCart', 'Pin', 'Rocket']
+
+  
+  // Form fields
   const title = ref('')
   const content = ref('')
   const category = ref('')
   const icon = ref('')
   const duedate = ref('')
   
+  // Submit handler: creates a new note
   async function handleSubmit() {
     const newNote = {
       title: title.value,
@@ -56,17 +68,14 @@
   
       const createdNote = await res.json()
       console.log('Note added:', createdNote)
-      emit('note-added')
-
+      emit('note-added') // Ask parent to reload list
   
-      // Clear the form
+      // Reset the form
       title.value = ''
       content.value = ''
       category.value = ''
       icon.value = ''
       duedate.value = ''
-  
-      // You can also emit an event here to refresh the notes list
     } catch (error) {
       console.error('Error adding note:', error)
     }
