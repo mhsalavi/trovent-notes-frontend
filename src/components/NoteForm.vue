@@ -4,10 +4,10 @@
   
       <!-- Required fields -->
       <label>Title *</label>
-      <input v-model="title" required />
+      <input v-model="title" required minlength="3" maxlength="100"/>
   
       <label>Content *</label>
-      <textarea v-model="content" required></textarea>
+      <textarea v-model="content" required minlength="5" maxlength="100"></textarea>
   
       <!-- Optional fields -->
       <label>Category</label>
@@ -22,7 +22,7 @@
       </select>
   
       <label>Due Date</label>
-      <input v-model="duedate" type="date" />
+      <input v-model="duedate" type="date" required/>
   
       <!-- Submit button changes based on mode -->
       <button type="submit">{{ isEditing ? 'Update Note' : 'Add Note' }}</button>
@@ -78,41 +78,92 @@
     noteId.value = null
   }
   
-  // Submit: either create or update a note
-  async function handleSubmit() {
-    const noteData = {
-      title: title.value,
-      content: content.value,
-      category: category.value || null,
-      icon: icon.value || null,
-      duedate: duedate.value || null
-    }
-  
-    try {
-      let res
-      if (isEditing.value && noteId.value !== null) {
-        // PUT request to update
-        res = await fetch(`http://localhost:8000/notes/${noteId.value}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(noteData)
-        })
-      } else {
-        // POST request to create
-        res = await fetch('http://localhost:8000/notes', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(noteData)
-        })
-      }
-  
-      if (!res.ok) throw new Error('Save failed')
-      emit('note-added')
-      resetForm()
-    } catch (err) {
-      console.error('Save error:', err)
+// Submit: either create or update a note
+async function handleSubmit() {
+  // Basic security keyword filter
+  const suspiciousPattern = /(drop|delete|insert|script|<|>)/i
+
+  if (
+    suspiciousPattern.test(title.value) ||
+    suspiciousPattern.test(content.value) ||
+    suspiciousPattern.test(category.value)
+  ) {
+    alert('Title, content, or category contains suspicious characters.')
+    return
+  }
+
+  // Text validation
+  if (!/^[\w\s.,!?'"()-]{3,100}$/.test(title.value)) {
+    alert('Title must be 3–100 characters and contain only normal characters.')
+    return
+  }
+
+  if (!/^[\w\s.,!?'"()-]{5,1000}$/.test(content.value)) {
+    alert('Content must be 5–1000 characters and clean.')
+    return
+  }
+
+  // Optional category validation
+  if (category.value) {
+    if (!/^[\w\s-]{2,30}$/i.test(category.value)) {
+      alert('Category should only contain letters, numbers, spaces or dashes.')
+      return
     }
   }
+
+  // Due date is required and must be valid
+  if (!duedate.value) {
+    alert('Please enter a due date.')
+    return
+  }
+
+  const parsed = new Date(duedate.value)
+  if (isNaN(parsed.getTime())) {
+    alert('Please enter a valid due date.')
+    return
+  }
+
+  if (parsed.getFullYear() > 2100) {
+    alert('Due date must be before the year 2100.')
+    return
+  }
+
+  // Construct note payload
+  const noteData = {
+    title: title.value,
+    content: content.value,
+    category: category.value || null,
+    icon: icon.value || null,
+    duedate: duedate.value || null
+  }
+
+  try {
+    let res
+    if (isEditing.value && noteId.value !== null) {
+      // PUT request to update
+      res = await fetch(`http://localhost:8000/notes/${noteId.value}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(noteData)
+      })
+    } else {
+      // POST request to create
+      res = await fetch('http://localhost:8000/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(noteData)
+      })
+    }
+
+    if (!res.ok) throw new Error('Save failed')
+
+    emit('note-added')
+    resetForm()
+  } catch (err) {
+    console.error('Save error:', err)
+  }
+}
+
 
   function cancelEdit() {
     resetForm()
