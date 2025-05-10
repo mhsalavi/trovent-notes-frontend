@@ -1,18 +1,24 @@
 <template>
     <form @submit.prevent="handleSubmit">
+      <!-- Heading dynamically changes between add/edit mode -->
       <h2>{{ isEditing ? 'Edit Note' : 'Add a New Note' }}</h2>
   
-      <!-- Required fields -->
+      <!-- Title Field (required) -->
       <label>Title *</label>
       <input v-model="title" required minlength="3" maxlength="100"/>
+      <p v-if="errors.title" class="text-red-400 text-sm mt-1">{{ errors.title }}</p>
   
+      <!-- Content Field (required) -->
       <label>Content *</label>
       <textarea v-model="content" required minlength="5" maxlength="100"></textarea>
+      <p v-if="errors.content" class="text-red-400 text-sm mt-1">{{ errors.content }}</p>
   
-      <!-- Optional fields -->
+       <!-- Category Field (optional) -->
       <label>Category</label>
       <input v-model="category" placeholder="e.g., personal" />
+      <p v-if="errors.category" class="text-red-400 text-sm mt-1">{{ errors.category }}</p>
   
+      <!-- Icon Field (optional dropdown) -->
       <label>Icon</label>
       <select v-model="icon">
         <option value="">None</option>
@@ -21,12 +27,13 @@
         </option>
       </select>
   
-      <label>Due Date</label>
+       <!-- Due Date Field (required) -->
+      <label>Due Date *</label>
       <input v-model="duedate" type="date" required/>
+      <p v-if="errors.duedate" class="text-red-400 text-sm mt-1">{{ errors.duedate }}</p>
   
-      <!-- Submit button changes based on mode -->
+      <!-- Submit and Cancel Buttons -->
       <button type="submit">{{ isEditing ? 'Update Note' : 'Add Note' }}</button>
-      <!-- Cancel editing -->
       <button v-if="isEditing" type="button" @click="cancelEdit" style="margin-top: 0.5rem; background-color: #aaa;">
         Cancel
       </button>
@@ -37,15 +44,14 @@
   import { ref, watch } from 'vue'
   import { Pencil, Book, ShoppingCart, Pin, Rocket } from 'lucide-vue-next'
   
-  // Props: optional note to edit
-  const props = defineProps({
-    modelValue: Object
-  })
-  
+  // Props: editable note (passed from parent when editing)
+  const props = defineProps({modelValue: Object })
   const emit = defineEmits(['note-added' , 'cancel-edit'])
+
+  // Available icon options for user selection
   const availableIcons = ['Pencil', 'Book', 'ShoppingCart', 'Pin', 'Rocket']
   
-  // Form state
+ // Reactive fields for the form state
   const title = ref('')
   const content = ref('')
   const category = ref('')
@@ -53,8 +59,17 @@
   const duedate = ref('')
   const isEditing = ref(false)
   const noteId = ref(null)
+
+ // Field-level validation error messages
+  const errors = ref({
+  title: '',
+  content: '',
+  category: '',
+  duedate: ''
+})
+
   
-  // Watch for changes to modelValue and populate form
+  // When modelValue changes (i.e. user clicks "Edit"), populate form fields
   watch(() => props.modelValue, (newVal) => {
     if (newVal) {
       title.value = newVal.title
@@ -67,7 +82,7 @@
     }
   })
   
-  // Reset form fields to default
+  // Reset form state to default/blank values
   function resetForm() {
     title.value = ''
     content.value = ''
@@ -78,123 +93,94 @@
     noteId.value = null
   }
   
-// Submit: either create or update a note
-async function handleSubmit() {
-  // Basic security keyword filter
-  const suspiciousPattern = /(drop|delete|insert|script|<|>)/i
+ // Submit form (add or update a note)
+  async function handleSubmit() {
+    // Clear previous errors
+    errors.value = { title: '', content: '', category: '', duedate: '' }
+    const suspiciousPattern = /(drop|delete|insert|script|<|>)/i
+    let hasError = false
 
-  if (
-    suspiciousPattern.test(title.value) ||
-    suspiciousPattern.test(content.value) ||
-    suspiciousPattern.test(category.value)
-  ) {
-    alert('Title, content, or category contains suspicious characters.')
-    return
-  }
-
-  // Text validation
-  if (!/^[\w\s.,!?'"()-]{3,100}$/.test(title.value)) {
-    alert('Title must be 3–100 characters and contain only normal characters.')
-    return
-  }
-
-  if (!/^[\w\s.,!?'"()-]{5,1000}$/.test(content.value)) {
-    alert('Content must be 5–1000 characters and clean.')
-    return
-  }
-
-  // Optional category validation
-  if (category.value) {
-    if (!/^[\w\s-]{2,30}$/i.test(category.value)) {
-      alert('Category should only contain letters, numbers, spaces or dashes.')
-      return
+     // Validate title
+    if (suspiciousPattern.test(title.value)) {
+      errors.value.title = 'Title contains suspicious characters.'
+      hasError = true
+    } else if (!/^[\w\s.,!?'"()-]{3,100}$/.test(title.value)) {
+      errors.value.title = 'Title must be 3–100 clean characters.'
+      hasError = true
     }
-  }
 
-  // Due date is required and must be valid
-  if (!duedate.value) {
-    alert('Please enter a due date.')
-    return
-  }
+      // Validate content
+    if (suspiciousPattern.test(content.value)) {
+      errors.value.content = 'Content contains suspicious characters.'
+      hasError = true
+    } else if (!/^[\w\s.,!?'"()-]{5,1000}$/.test(content.value)) {
+      errors.value.content = 'Content must be 5–1000 clean characters.'
+      hasError = true
+    }
+    // Validate category (if filled)
+    if (category.value) {
+      if (suspiciousPattern.test(category.value)) {
+        errors.value.category = 'Category contains suspicious characters.'
+        hasError = true
+      } else if (!/^[\w\s.,!?'"()-]{5,1000}$/.test(category.value)) {
+        errors.value.category = 'Category must be 5–1000 clean characters.'
+        hasError = true
+      }
+    }
 
-  const parsed = new Date(duedate.value)
-  if (isNaN(parsed.getTime())) {
-    alert('Please enter a valid due date.')
-    return
-  }
-
-  if (parsed.getFullYear() > 2100) {
-    alert('Due date must be before the year 2100.')
-    return
-  }
-
-  // Construct note payload
-  const noteData = {
-    title: title.value,
-    content: content.value,
-    category: category.value || null,
-    icon: icon.value || null,
-    duedate: duedate.value || null
-  }
-
-  try {
-    let res
-    if (isEditing.value && noteId.value !== null) {
-      // PUT request to update
-      res = await fetch(`http://localhost:8000/notes/${noteId.value}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(noteData)
-      })
+    // Validate due date
+    if (!duedate.value) {
+      errors.value.duedate = 'Due date is required.'
+      hasError = true
     } else {
-      // POST request to create
-      res = await fetch('http://localhost:8000/notes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(noteData)
-      })
+      const parsed = new Date(duedate.value)
+      if (isNaN(parsed.getTime())) {
+        errors.value.duedate = 'Invalid due date.'
+        hasError = true
+      } else if (parsed.getFullYear() > 2100) {
+        errors.value.duedate = 'Due date must be before 2100.'
+        hasError = true
+      }
     }
 
-    if (!res.ok) throw new Error('Save failed')
+    // Stop if validation failed
+    if (hasError) return
 
-    emit('note-added')
-    resetForm()
-  } catch (err) {
-    console.error('Save error:', err)
+    // Build payload
+    const noteData = {
+      title: title.value,
+      content: content.value,
+      category: category.value || null,
+      icon: icon.value || null,
+      duedate: duedate.value || null
+    }
+
+    // Send POST or PUT based on editing state
+    try {
+      const res = await fetch(
+        isEditing.value && noteId.value
+          ? `http://localhost:8000/notes/${noteId.value}`
+          : 'http://localhost:8000/notes',
+        {
+          method: isEditing.value ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(noteData)
+        }
+      )
+      if (!res.ok) throw new Error('Save failed')
+
+      emit('note-added')
+      resetForm()
+    } catch (err) {
+      console.error('Save error:', err)
+      }
   }
-}
 
-
+  // Cancel editing and reset
   function cancelEdit() {
     resetForm()
     emit('cancel-edit') // Tell parent to exit edit mode
   }
   </script>
   
-  <style scoped>
-  form {
-    margin-bottom: 2rem;
-    display: flex;
-    flex-direction: column;
-    max-width: 400px;
-  }
-  label {
-    margin-top: 1rem;
-    font-weight: bold;
-  }
-  input, textarea, select {
-    padding: 0.5rem;
-    font-size: 1rem;
-    margin-top: 0.25rem;
-  }
-  button {
-    margin-top: 1.5rem;
-    padding: 0.5rem;
-    font-size: 1rem;
-    background-color: #4caf50;
-    color: white;
-    border: none;
-    cursor: pointer;
-  }
-  </style>
   
