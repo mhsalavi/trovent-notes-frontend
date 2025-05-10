@@ -67,7 +67,7 @@
   async function deleteNote(id) {
     if (!confirm('Are you sure you want to delete this note?')) return
     try {
-      const res = await fetch(`http://localhost:8000/notes/${id}`, {
+      const res = await fetch(`http://127.0.0.1:8000/notes/${id}`, {
         method: 'DELETE'
       })
       if (!res.ok) throw new Error('Failed to delete')

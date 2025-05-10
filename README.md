@@ -1,41 +1,96 @@
-# trovent-notes-frontend
+# Trovent Notes Frontend
 
-This template should help get you started developing with Vue 3 in Vite.
+This project is a Vue 3-based frontend application that interacts with the [Trovent Notes REST API backend](https://github.com/trovent/notes-api). It allows users to create, edit, view, and delete notes with input validation, and modal previews.
 
-## Recommended IDE Setup
+## Features
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+- Fully responsive user interface built with Tailwind CSS and SCSS.
+- Create, update, delete, and view notes.
+- Search and sorting functionality.
+- Input validation with inline error messages.
+- Icons for actions (view, edit, delete).
+- Scrollable list section with styled scrollbar.
 
-## Customize configuration
+## Project Structure
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+- `NoteForm.vue`: Form component to add/edit a note.
+- `NoteList.vue`: Renders list of notes with actions.
+- `HomeView.vue`: Main view handling layout, search/sort logic, and modals.
+- `style.scss`: Contains Tailwind imports and SCSS styling variables.
 
-## Project Setup
+## Setup Instructions
 
-```sh
+### 1. Clone and Navigate
+
+```bash
+git clone https://github.com/mhsalavi/trovent-notes-frontend.git
+cd trovent-notes-frontend
+```
+
+### 2. Install Dependencies
+
+```bash
 npm install
 ```
 
-### Compile and Hot-Reload for Development
+### 3. Start Development Server
 
-```sh
+```bash
 npm run dev
 ```
 
-### Compile and Minify for Production
+The app should now be running on [http://localhost:3000](http://localhost:3000)
 
-```sh
-npm run build
+### 4. API Backend
+
+Make sure the [Trovent Notes API](https://github.com/trovent/notes-api) backend is running on [http://localhost:8000](http://localhost:8000).
+
+## Testing
+
+This project uses [Vitest](https://vitest.dev/) and [@vue/test-utils](https://test-utils.vuejs.org/) for unit testing.
+
+To run all unit tests, use:
+
+```bash
+npm run test
 ```
 
-### Run Unit Tests with [Vitest](https://vitest.dev/)
+### Test Coverage
 
-```sh
-npm run test:unit
-```
+The following components are covered with unit tests:
 
-### Lint with [ESLint](https://eslint.org/)
+- **NoteForm.vue**
 
-```sh
-npm run lint
-```
+  - Validation for title, content, category, and due date.
+  - Form reset after successful submission.
+  - Pre-filling form fields in edit mode.
+  - Graceful error handling on failed save.
+
+- **NoteList.vue**
+
+  - Emits `view-note`, `edit-note`, and `note-deleted` events.
+  - Renders list of notes and empty state correctly.
+  - Conditionally renders icons via Lucide.
+
+Test files are located in the `src/tests/` directory.
+
+## Docker Integration
+
+This frontend is containerized with Docker and integrated with the backend using `docker-compose`.
+
+To run the project inside a Docker container, follow these steps:
+
+1. **Install Docker**  
+   Ensure that [Docker](https://docs.docker.com/get-docker/) is installed on your system.
+
+2. **Navigate to the project directory**  
+   Move to the directory where the `docker-compose.yml` file is located:
+   ```bash
+   cd path/to/your/project
+   ```
+
+## Validation
+
+- Input fields are validated with RegEx to avoid injection or malformed input.
+- Errors are shown inline under the relevant field.
+- Unexpected backend failures are caught with try/catch and logged.

@@ -98,7 +98,7 @@ function handleViewNote(note) {
 // Fetch notes from API on load or after changes
 async function loadNotes() {
   try {
-    const res = await fetch('http://localhost:8000/notes')
+    const res = await fetch('http://127.0.0.1:8000/notes')
     notes.value = await res.json()
   } catch (err) {
     console.error('Failed to load notes:', err)

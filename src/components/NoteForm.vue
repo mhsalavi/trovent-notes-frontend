@@ -97,7 +97,7 @@
   async function handleSubmit() {
     // Clear previous errors
     errors.value = { title: '', content: '', category: '', duedate: '' }
-    const suspiciousPattern = /(drop|delete|insert|script|<|>)/i
+    const suspiciousPattern = /(<|>)/i
     let hasError = false
 
      // Validate title
@@ -159,8 +159,8 @@
     try {
       const res = await fetch(
         isEditing.value && noteId.value
-          ? `http://localhost:8000/notes/${noteId.value}`
-          : 'http://localhost:8000/notes',
+          ? `http://127.0.0.1:8000/notes/${noteId.value}`
+          : 'http://127.0.0.1:8000/notes',
         {
           method: isEditing.value ? 'PUT' : 'POST',
           headers: { 'Content-Type': 'application/json' },
